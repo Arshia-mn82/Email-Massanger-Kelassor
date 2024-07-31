@@ -21,10 +21,23 @@ if not os.path.exists(USER_FILE):
 
 
 class UserManager:
+    """
+    Manages user data and authentication.
+    """
+
     def __init__(self):
+        """
+        Initializes the UserManager by loading user data from the USER_FILE.
+        """
         self.users = self.load_users()
 
     def load_users(self):
+        """
+        Loads user data from the USER_FILE.
+
+        Returns:
+            dict: A dictionary containing user data.
+        """
         if not os.path.exists(USER_FILE):
             return {}
         with open(USER_FILE, "r") as file:
@@ -36,10 +49,24 @@ class UserManager:
                 return {}
 
     def save_users(self):
+        """
+        Saves the current user data to the USER_FILE.
+        """
         with open(USER_FILE, "w") as file:
             json.dump(self.users, file)
 
     def add_user(self, username, password, is_admin=False):
+        """
+        Adds a new user to the user data.
+
+        Args:
+            username (str): The username of the new user.
+            password (str): The password for the new user.
+            is_admin (bool): Whether the new user is an admin.
+
+        Returns:
+            tuple: A tuple containing a success boolean and a message string.
+        """
         if username in self.users:
             return False, "Username already exists."
 
@@ -55,6 +82,16 @@ class UserManager:
         return True, "User added successfully"
 
     def authenticate_user(self, username, password):
+        """
+        Authenticates a user by checking the provided username and password.
+
+        Args:
+            username (str): The username of the user.
+            password (str): The password of the user.
+
+        Returns:
+            tuple: A tuple containing a success boolean and an admin boolean.
+        """
         if username not in self.users:
             return False, False
 
@@ -65,15 +102,45 @@ class UserManager:
         return False, False
 
     def is_valid_admin(self, username, password):
+        """
+        Checks if the provided username and password belong to an admin user.
+
+        Args:
+            username (str): The username of the user.
+            password (str): The password of the user.
+
+        Returns:
+            bool: True if the user is a valid admin, otherwise False.
+        """
         if username == "admin":
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
             return self.users.get("admin", {}).get("password") == hashed_password
         return False
 
     def user_exists(self, username):
+        """
+        Checks if a user exists.
+
+        Args:
+            username (str): The username to check.
+
+        Returns:
+            bool: True if the user exists, otherwise False.
+        """
         return username in self.users
 
     def change_password(self, username, old_password, new_password):
+        """
+        Changes the password for a given user.
+
+        Args:
+            username (str): The username of the user.
+            old_password (str): The current password of the user.
+            new_password (str): The new password to set.
+
+        Returns:
+            tuple: A tuple containing a success boolean and a message string.
+        """
         if username not in self.users:
             return False, "User not found."
 
@@ -88,6 +155,10 @@ class UserManager:
 
 
 class Email:
+    """
+    Represents an email message.
+    """
+
     def __init__(
         self,
         sender,
@@ -99,6 +170,19 @@ class Email:
         reply_to=None,
         timestamp=None,
     ):
+        """
+        Initializes an Email instance.
+
+        Args:
+            sender (str): The sender of the email.
+            receiver (str): The receiver of the email.
+            subject (str): The subject of the email.
+            content (str): The content of the email.
+            email_id (int): The unique ID of the email.
+            cc (list, optional): A list of CC recipients. Defaults to an empty list.
+            reply_to (int, optional): The ID of the email being replied to. Defaults to None.
+            timestamp (str, optional): The timestamp of the email. Defaults to the current time.
+        """
         self.sender = sender
         self.receiver = receiver
         self.subject = subject
@@ -109,17 +193,38 @@ class Email:
         self.timestamp = timestamp if timestamp else datetime.datetime.now().isoformat()
 
     def __repr__(self):
+        """
+        Returns a string representation of the Email instance.
+
+        Returns:
+            str: A string representation of the email.
+        """
         return f"Email(ID: {self.email_id}, From: {self.sender}, To: {self.receiver}, Subject: {self.subject})"
 
 
 class EmailManager:
+    """
+    Manages email operations such as sending and retrieving emails.
+    """
+
     def __init__(self, user_manager):
+        """
+        Initializes the EmailManager.
+
+        Args:
+            user_manager (UserManager): An instance of UserManager to handle user operations.
+        """
         self.user_manager = user_manager
         self.emails = self.load_emails()
         self.email_counters = self.initialize_email_counters()
 
     def initialize_email_counters(self):
-        # Initialize email counters for each user
+        """
+        Initializes email counters for each user.
+
+        Returns:
+            dict: A dictionary where keys are usernames and values are email ID counters.
+        """
         counters = {}
         for email in self.emails:
             if email.sender not in counters:
@@ -133,6 +238,12 @@ class EmailManager:
         return counters
 
     def load_emails(self):
+        """
+        Loads email data from the EMAIL_FILE.
+
+        Returns:
+            list: A list of Email instances.
+        """
         if not os.path.exists(EMAIL_FILE):
             return []
         with open(EMAIL_FILE, "r") as file:
@@ -140,11 +251,23 @@ class EmailManager:
             return [Email(**email) for email in email_data]
 
     def save_emails(self):
+        """
+        Saves the current email data to the EMAIL_FILE.
+        """
         with open(EMAIL_FILE, "w") as file:
             email_data = [email.__dict__ for email in self.emails]
             json.dump(email_data, file)
 
     def get_next_email_id(self, username):
+        """
+        Gets the next email ID for a given user and increments the counter.
+
+        Args:
+            username (str): The username for which to get the next email ID.
+
+        Returns:
+            int: The next available email ID.
+        """
         if username not in self.email_counters:
             self.email_counters[username] = 0
         next_id = self.email_counters[username]
@@ -152,6 +275,20 @@ class EmailManager:
         return next_id
 
     def send_email(self, sender, receiver, subject, content, cc=None, reply_to=None):
+        """
+        Sends an email.
+
+        Args:
+            sender (str): The sender of the email.
+            receiver (str): The receiver of the email.
+            subject (str): The subject of the email.
+            content (str): The content of the email.
+            cc (list, optional): A list of CC recipients. Defaults to None.
+            reply_to (int, optional): The ID of the email being replied to. Defaults to None.
+
+        Returns:
+            tuple: A tuple containing a success boolean and a message string.
+        """
         # Check if the receiver exists
         if not self.user_manager.user_exists(receiver):
             return False, f"Receiver '{receiver}' does not exist."
@@ -170,6 +307,15 @@ class EmailManager:
         return True, "Email sent successfully"
 
     def get_user_emails(self, username):
+        """
+        Retrieves all emails for a given user.
+
+        Args:
+            username (str): The username to retrieve emails for.
+
+        Returns:
+            list: A list of Email instances associated with the user, sorted by timestamp.
+        """
         user_emails = [
             email
             for email in self.emails
@@ -181,18 +327,40 @@ class EmailManager:
         return user_emails
 
     def get_email_by_id(self, email_id, sender_username):
+        """
+        Retrieves an email by its ID and sender's username.
+
+        Args:
+            email_id (int): The ID of the email.
+            sender_username (str): The username of the sender.
+
+        Returns:
+            Email or None: The Email instance if found, otherwise None.
+        """
         for email in self.emails:
             if email.email_id == email_id and email.sender == sender_username:
                 return email
         return None
+
+
 class EmailMessengerApp:
-    def init(self):
+    """
+    Main application for the Email Messenger system.
+    """
+
+    def __init__(self):
+        """
+        Initializes the EmailMessengerApp.
+        """
         self.user_manager = UserManager()
         self.email_manager = EmailManager(self.user_manager)  # Initialize EmailManager
         self.current_user = None
         self.is_admin = False
 
     def run(self):
+        """
+        Runs the main application loop.
+        """
         print("Welcome to Email Messenger")
 
         while True:
@@ -235,9 +403,12 @@ class EmailMessengerApp:
                 print("Goodbye!")
                 break
             else:
-                print("Invalid option. Please try again.") 
-                 
+                print("Invalid option. Please try again.")
+
     def show_menu(self):
+        """
+        Displays the menu options based on the user's role.
+        """
         print("\nMenu:")
         print("1. Send email")
         print("2. See my emails")
@@ -247,6 +418,9 @@ class EmailMessengerApp:
         print("5. Exit")
 
     def send_email(self):
+        """
+        Sends an email by gathering user input and invoking EmailManager's send_email method.
+        """
         receiver = input("Enter receiver username: ")
         subject = input("Enter subject: ")
         content = input("Enter message content: ")
@@ -285,6 +459,9 @@ class EmailMessengerApp:
         print(message)
 
     def view_emails(self):
+        """
+        Displays all emails for the current user.
+        """
         emails = self.email_manager.get_user_emails(self.current_user)
         for email in emails:
             reply_info = (
@@ -296,6 +473,9 @@ class EmailMessengerApp:
             print(f"Content: {email.content}\n")
 
     def change_password(self):
+        """
+        Changes the current user's password.
+        """
         old_password = input("Enter current password: ")
         new_password = input("Enter new password: ")
         confirm_password = input("Confirm new password: ")
@@ -308,6 +488,9 @@ class EmailMessengerApp:
             print("Passwords do not match.")
 
     def add_new_user(self):
+        """
+        Adds a new user to the system. This option is available only for admin users.
+        """
         if not self.is_admin:
             print("Only admin can add new users.")
             return
@@ -319,7 +502,11 @@ class EmailMessengerApp:
         print(message)
 
 
-if name == "main":
+if __name__ == "__main__":
     app = EmailMessengerApp()
-    app.run()  
-            
+    app.run()
+
+######################################  INSTRUCTION TO USE ##################################################:
+## Please run the code with the json file that was pushed to the github repisotry 
+## beacuse the data for the only admin that we have is in that json file, 
+## RUN THE CODE IN A FOLDER CONTAINING THE JSON FILE, THANKS :)
