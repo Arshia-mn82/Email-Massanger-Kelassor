@@ -185,3 +185,54 @@ class EmailManager:
             if email.email_id == email_id and email.sender == sender_username:
                 return email
         return None
+class EmailMessengerApp:
+    def init(self):
+        self.user_manager = UserManager()
+        self.email_manager = EmailManager(self.user_manager)  # Initialize EmailManager
+        self.current_user = None
+        self.is_admin = False
+
+    def run(self):
+        print("Welcome to Email Messenger")
+
+        while True:
+            username = input("Username: ")
+            password = input("Password: ")
+
+            if username == "admin" and self.user_manager.is_valid_admin(
+                username, password
+            ):
+                self.current_user = username
+                self.is_admin = True
+                print(f"Welcome Admin!")
+                break
+            else:
+                authenticated, is_admin = self.user_manager.authenticate_user(
+                    username, password
+                )
+                if authenticated:
+                    self.current_user = username
+                    self.is_admin = is_admin
+                    print(f"Welcome {username}!")
+                    break
+                else:
+                    print("Invalid username or password. Please try again.")
+
+        while True:
+            self.show_menu()
+
+            choice = input("Choose an option: ")
+
+            if choice == "1":
+                self.send_email()
+            elif choice == "2":
+                self.view_emails()
+            elif choice == "3":
+                self.change_password()
+            elif choice == "4" and self.is_admin:
+                self.add_new_user()
+            elif choice == "5":
+                print("Goodbye!")
+                break
+            else:
+                print("Invalid option. Please try again.")    
