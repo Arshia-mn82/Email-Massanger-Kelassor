@@ -235,4 +235,91 @@ class EmailMessengerApp:
                 print("Goodbye!")
                 break
             else:
-                print("Invalid option. Please try again.")    
+                print("Invalid option. Please try again.") 
+                 
+    def show_menu(self):
+        print("\nMenu:")
+        print("1. Send email")
+        print("2. See my emails")
+        print("3. Change password")
+        if self.is_admin:  # Only show this option if the user is an admin
+            print("4. Add new user")
+        print("5. Exit")
+
+    def send_email(self):
+        receiver = input("Enter receiver username: ")
+        subject = input("Enter subject: ")
+        content = input("Enter message content: ")
+        cc_input = input("Enter CC usernames (comma separated, optional): ")
+        cc = (
+            [username.strip() for username in cc_input.split(",")] if cc_input else None
+        )
+        reply_to_id = input(
+            "Replying to any email? (Enter email ID and sender username, separated by a comma, or leave blank): "
+        ).strip()
+
+        reply_to = None
+        if reply_to_id:
+            try:
+                reply_to_id, reply_to_sender = [
+                    item.strip() for item in reply_to_id.split(",", 1)
+                ]
+                reply_to_id = int(reply_to_id)
+                reply_to_email = self.email_manager.get_email_by_id(
+                    reply_to_id, reply_to_sender
+                )
+                if reply_to_email:
+                    reply_to = reply_to_email.email_id
+                else:
+                    print(
+                        f"No email found with ID: {reply_to_id} from sender: {reply_to_sender}"
+                    )
+                    return
+            except ValueError:
+                print("Invalid ID format. Please enter a numeric ID.")
+                return
+
+        success, message = self.email_manager.send_email(
+            self.current_user, receiver, subject, content, cc, reply_to
+        )
+        print(message)
+
+    def view_emails(self):
+        emails = self.email_manager.get_user_emails(self.current_user)
+        for email in emails:
+            reply_info = (
+                f"(Reply to ID: {email.reply_to})" if email.reply_to is not None else ""
+            )
+            print(
+                f"ID: {email.email_id}, From: {email.sender}, To: {email.receiver}, Subject: {email.subject}, CC: {email.cc}, Time: {email.timestamp} {reply_info}"
+            )
+            print(f"Content: {email.content}\n")
+
+    def change_password(self):
+        old_password = input("Enter current password: ")
+        new_password = input("Enter new password: ")
+        confirm_password = input("Confirm new password: ")
+        if new_password == confirm_password:
+            success, message = self.user_manager.change_password(
+                self.current_user, old_password, new_password
+            )
+            print(message)
+        else:
+            print("Passwords do not match.")
+
+    def add_new_user(self):
+        if not self.is_admin:
+            print("Only admin can add new users.")
+            return
+
+        new_username = input("Enter new username: ")
+        new_password = input("Enter new password: ")
+
+        success, message = self.user_manager.add_user(new_username, new_password)
+        print(message)
+
+
+if name == "main":
+    app = EmailMessengerApp()
+    app.run()  
+            
